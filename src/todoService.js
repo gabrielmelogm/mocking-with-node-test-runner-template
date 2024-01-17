@@ -1,3 +1,5 @@
+import Todo from "./todo.js"
+
 export default class TodoService {
     #todoRepository
 
@@ -27,6 +29,6 @@ export default class TodoService {
 
     async list(query) {
         return (await this.#todoRepository.list())
-            .map(({ text, ...result }) => ({ text: text.toUpperCase(), ...result }))
+            .map(({ text, ...result }) => (new Todo({ text: text.toUpperCase(), ...result })))
     }
 }
