@@ -1,137 +1,146 @@
-import assert from "node:assert"
-import crypto from "node:crypto"
-import { describe, it, before, beforeEach, after, afterEach} from 'node:test'
+import assert from 'node:assert'
+import crypto from 'node:crypto'
+import { after, afterEach, before, beforeEach, describe, it } from 'node:test'
 
-import sinon from "sinon"
+import sinon from 'sinon'
 
-import Todo from "../src/todo.js"
-import TodoService from "../src/todoService.js"
+import Todo from '../src/todo.js'
+import TodoService from '../src/todoService.js'
 
 describe('todoService test Suite', () => {
-  describe('#list', () => {
-    let _todoService
-    let _dependencies
+	describe('#list', () => {
+		let _todoService
+		let _dependencies
 
-    const mockDatabase = [
-      {
-        text: 'I MUST PLAN MY TRIP TO EUROPE',
-        when: new Date("2021-03-22T00:00:00.000Z"),
-        status: 'late',
-        id: '5d7f0b36-0cf8-43f4-9672-10c07da8b2ed'
-      }
-    ]
-    beforeEach((context) => {
-      _dependencies = {
-        todoRepository: {
-          list: context.mock.fn(async () => mockDatabase)
-        }
-      }
-      _todoService = new TodoService(_dependencies)
-    })
-    it('should return a list of items with uppercase text', async () => {
-      const expected = mockDatabase.map(({ text, ...result }) => (new Todo({ text: text.toUpperCase(), ...result })))
-      const result = await _todoService.list()
-      assert.deepStrictEqual(result, expected)
+		const mockDatabase = [
+			{
+				text: 'I MUST PLAN MY TRIP TO EUROPE',
+				when: new Date('2021-03-22T00:00:00.000Z'),
+				status: 'late',
+				id: '5d7f0b36-0cf8-43f4-9672-10c07da8b2ed',
+			},
+		]
 
-      const fnMock = _dependencies.todoRepository.list.mock
-      assert.strictEqual(fnMock.callCount(), 1)
-    })
-  })
-  describe('#create', () => {
-    let _todoService
-    let _dependencies
-    let _sandBox
+		beforeEach((context) => {
+			_dependencies = {
+				todoRepository: {
+					list: context.mock.fn(async () => mockDatabase),
+				},
+			}
+			_todoService = new TodoService(_dependencies)
+		})
 
-    const mockCreateResult = {
-      text: 'I must plan my trip to Europe',
-      when: new Date("2021-03-22T00:00:00.000Z"),
-      status: 'late',
-      id: '5d7f0b36-0cf8-43f4-9672-10c07da8b2ed'
-    }
-    const DEFAULT_ID = mockCreateResult.id
-    before(() => {
-      crypto.randomUUID = () => DEFAULT_ID
-      _sandBox = sinon.createSandbox()
-    })
-    after(async () => {
-      crypto.randomUUID = (await import ('node:crypto')).randomUUID
-    })
-    afterEach(() => _sandBox.restore())
-    beforeEach((context) => {
-      _dependencies = {
-        todoRepository: {
-          create: context.mock.fn(async () => mockCreateResult)
-        }
-      }
-      _todoService = new TodoService(_dependencies)
-    })
+		it('should return a list of items with uppercase text', async () => {
+			const expected = mockDatabase.map(
+				({ text, ...result }) =>
+					new Todo({ text: text.toUpperCase(), ...result }),
+			)
+			const result = await _todoService.list()
+			assert.deepStrictEqual(result, expected)
 
-    it("shouldn't save todo item with invalid data", async () => {
-      const input = new Todo({
-        text: '',
-        when: ''
-      })
-      const expected = {
-        error: {
-          message: 'invalid data',
-          data: {
-            text: '',
-            when: '',
-            status: '',
-            id: DEFAULT_ID
-          }
-        }
-      }
+			const fnMock = _dependencies.todoRepository.list.mock
+			assert.strictEqual(fnMock.callCount(), 1)
+		})
+	})
+	describe('#create', () => {
+		let _todoService
+		let _dependencies
+		let _sandBox
 
-      const result = await _todoService.create(input)
-      assert.deepStrictEqual(JSON.stringify(result), JSON.stringify(expected))
-    })
+		const mockCreateResult = {
+			text: 'I must plan my trip to Europe',
+			when: new Date('2021-03-22T00:00:00.000Z'),
+			status: 'late',
+			id: '5d7f0b36-0cf8-43f4-9672-10c07da8b2ed',
+		}
 
-    it("shouldn't save todo item with pending status when the property is further than today", async () => {
-      const properties = {
-        text: 'I must plan my trip to Europe',
-        when: new Date('2020-12-02 12:00:00 GMT-0')
-      }
+		const DEFAULT_ID = mockCreateResult.id
 
-      const expected = {
-        ...properties,
-        status: 'pending',
-        id: DEFAULT_ID
-      }
+		before(() => {
+			crypto.randomUUID = () => DEFAULT_ID
+			_sandBox = sinon.createSandbox()
+		})
 
-      const input = new Todo(properties)
-      const today = new Date('2020-12-01')
-      _sandBox.useFakeTimers(today.getTime())
+		after(async () => {
+			crypto.randomUUID = (await import('node:crypto')).randomUUID
+		})
 
-      await _todoService.create(input)
+		beforeEach((context) => {
+			_dependencies = {
+				todoRepository: {
+					create: context.mock.fn(async () => mockCreateResult),
+				},
+			}
+			_todoService = new TodoService(_dependencies)
+		})
 
-      const fnMock = _dependencies.todoRepository.create.mock
-      assert.strictEqual(fnMock.callCount(), 1)
-      assert.deepStrictEqual(fnMock.calls[0].arguments[0], expected)
-    })
-    
-    it("shouldn't save todo item with late status when the property is further than today", async () => {
-      const properties = {
-        text: 'I must plan my trip to Europe',
-        when: new Date('2020-12-01 12:00:00 GMT-0')
-      }
+		afterEach(() => _sandBox.restore())
 
-      const expected = {
-        ...properties,
-        status: 'late',
-        id: DEFAULT_ID
-      }
+		it("shouldn't save todo item with invalid data", async () => {
+			const input = new Todo({
+				text: '',
+				when: '',
+			})
+			const expected = {
+				error: {
+					message: 'invalid data',
+					data: {
+						text: '',
+						when: '',
+						status: '',
+						id: DEFAULT_ID,
+					},
+				},
+			}
 
-      const input = new Todo(properties)
-      const today = new Date('2020-12-02')
-      _sandBox.useFakeTimers(today.getTime())
+			const result = await _todoService.create(input)
+			assert.deepStrictEqual(JSON.stringify(result), JSON.stringify(expected))
+		})
 
-      await _todoService.create(input)
+		it("shouldn't save todo item with pending status when the property is further than today", async () => {
+			const properties = {
+				text: 'I must plan my trip to Europe',
+				when: new Date('2020-12-02 12:00:00 GMT-0'),
+			}
 
-      const fnMock = _dependencies.todoRepository.create.mock
-      assert.strictEqual(fnMock.callCount(), 1)
-      assert.deepStrictEqual(fnMock.calls[0].arguments[0], expected)
-    })
+			const expected = {
+				...properties,
+				status: 'pending',
+				id: DEFAULT_ID,
+			}
 
-  })
+			const input = new Todo(properties)
+			const today = new Date('2020-12-01')
+			_sandBox.useFakeTimers(today.getTime())
+
+			await _todoService.create(input)
+
+			const fnMock = _dependencies.todoRepository.create.mock
+			assert.strictEqual(fnMock.callCount(), 1)
+			assert.deepStrictEqual(fnMock.calls[0].arguments[0], expected)
+		})
+
+		it("shouldn't save todo item with late status when the property is further than today", async () => {
+			const properties = {
+				text: 'I must plan my trip to Europe',
+				when: new Date('2020-12-01 12:00:00 GMT-0'),
+			}
+
+			const expected = {
+				...properties,
+				status: 'late',
+				id: DEFAULT_ID,
+			}
+
+			const input = new Todo(properties)
+			const today = new Date('2020-12-02')
+			_sandBox.useFakeTimers(today.getTime())
+
+			await _todoService.create(input)
+
+			const fnMock = _dependencies.todoRepository.create.mock
+			assert.strictEqual(fnMock.callCount(), 1)
+			assert.deepStrictEqual(fnMock.calls[0].arguments[0], expected)
+		})
+	})
 })
