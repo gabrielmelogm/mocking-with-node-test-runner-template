@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/index.js",
     "lint": "npx @biomejs/biome check --apply-unsafe ./src ./test",
-    "test": "node --test/",
+    "test": "node --test test/",
     "test:watch": "node --watch --test test/",
     "test:cov": "npx c8 --100 --all --exclude src/index.js --exclude test/ node --test test/"
   },
